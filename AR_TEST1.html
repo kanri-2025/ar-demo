@@ -21,6 +21,16 @@
     </a-entity>
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
   </a-scene>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      console.log("MINDAR:", window.MINDAR);
+      if (window.MINDAR && window.MINDAR.IMAGE) {
+        console.log("MindAR is ready.");
+      } else {
+        console.error("MindAR failed to initialize.");
+      }
+    });
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/aframe@1.2.0/dist/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.1.4/dist/mindar-image-aframe.prod.js"></script>
 </body>
