@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <title>設備AR表示デモ</title>
- 
   <style>
     body { margin: 0; overflow: hidden; }
   </style>
@@ -23,15 +22,5 @@
   </a-scene>
   <script src="https://cdn.jsdelivr.net/npm/aframe@1.2.0/dist/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.1.4/dist/mindar-image-aframe.prod.js"></script>
-  <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      console.log("MINDAR:", window.MINDAR);
-      if (window.MINDAR && window.MINDAR.IMAGE) {
-        console.log("MindAR is ready.");
-      } else {
-        console.error("MindAR failed to initialize.");
-      }
-    });
-  </script>
 </body>
 </html>
