@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>設備AR表示デモ</title>
+  <script src="https://cdn.jsdelivr.net/npm/aframe@1.4.2/dist/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
+  <style>
+    body { margin: 0; overflow: hidden; }
+    
+    #loading {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: white;
+      font-size: 24px;
+      z-index: 1000;
+    }
+    
+    .ar-ui {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 100;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 10px;
+      border-radius: 10px;
+      color: white;
+      text-align: center;
+    }
+    
+    #debug-info {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      background: rgba(0, 0, 0, 0.7);
+      color: white;
+      padding: 10px;
+      border-radius: 5px;
+      font-family: monospace;
+      font-size: 12px;
+      z-index: 100;
+      max-width: 300px;
+      max-height: 200px;
+      overflow: auto;
+    }
+  </style>
+</head>
+<body>
+  <!-- ローディングインジケーター -->
+  <div id="loading">
+    ARを読み込み中...しばらくお待ちください
+  </div>
+  
+  <!-- UI要素 -->
+  <div class="ar-ui" id="ar-status">
+    カメラを機器に向けてください
+  </div>
+  
+  <!-- デバッグ情報 -->
+  <div id="debug-info">デバッグ情報をここに表示します</div>
+  
+  <!-- A-Frameシーン -->
+  <a-scene 
+    mindar-image="imageTargetSrc: ./targets.mind; autoStart: false; debugUIEnabled: true;" 
+    embedded 
+    color-space="sRGB" 
+    renderer="colorManagement: true; antialias: true"
+    vr-mode-ui="enabled: false">
+    
+    <a-assets></a-assets>
+    
+    <a-entity mindar-image-target="targetIndex: 0">
+      <a-plane position="0 0 0" width="1.5" height="1.0" color="white" opacity="0.9">
+        <a-text value="リース料：¥30,000/月\n買取価格：¥1,200,000" 
+                position="-0.7 0.2 0.01" 
+                color="black" 
+                width="2"></a-text>
+      </a-plane>
+    </a-entity>
+    
+    <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+  </a-scene>
+  
+  <script>
+    // デバッグ情報を表示する関数
+    function logDebug(message) {
+      const debugElem = document.getElementById('debug-info');
+      const timestamp = new Date().toLocaleTimeString();
+      debugElem.innerHTML += `<div>[${timestamp}] ${message}</div>`;
+      console.log(`[DEBUG] ${message}`);
+    }
+    
+    // ブラウザとデバイス情報の取得
+    function getDeviceInfo() {
+      const ua = navigator.userAgent;
+      const browser = 
+        ua.indexOf('Chrome') > -1 ? 'Chrome' : 
+        ua.indexOf('Firefox') > -1 ? 'Firefox' : 
+        ua.indexOf('Safari') > -1 ? 'Safari' : 
+        ua.indexOf('Edge') > -1 ? 'Edge' : 
+        'Unknown';
+      
+      const mobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+      
+      return {
+        browser,
+        mobile,
+        https: window.location.protocol === 'https:',
+        ua: ua
+      };
+    }
+    
+    // ページ読み込み完了後の処理
+    document.addEventListener("DOMContentLoaded", () => {
+      // デバイス情報のログ
+      const deviceInfo = getDeviceInfo();
+      logDebug(`ブラウザ: ${deviceInfo.browser}`);
+      logDebug(`モバイル: ${deviceInfo.mobile ? 'はい' : 'いいえ'}`);
+      logDebug(`HTTPS: ${deviceInfo.https ? 'はい' : 'いいえ'}`);
+      
+      // ローディング要素とステータス要素
+      const loadingElem = document.getElementById('loading');
+      const statusElem = document.getElementById('ar-status');
+      
+      // シーン要素の取得
+      const sceneEl = document.querySelector('a-scene');
+      
+      // Mind ARの読み込み状態をチェック
+      if (window.MINDAR) {
+        logDebug("MINDAR グローバルオブジェクトが存在します");
+        if (window.MINDAR.IMAGE) {
+          logDebug("MINDAR.IMAGE が利用可能です");
+        } else {
+          logDebug("エラー: MINDAR.IMAGE が見つかりません");
+        }
+      } else {
+        logDebug("エラー: MINDAR グローバルオブジェクトが見つかりません");
+      }
+      
+      // targets.mindファイルへのパスをチェック
+      const mindARSystem = sceneEl.getAttribute('mindar-image');
+      logDebug(`targets.mindのパス: ${mindARSystem.imageTargetSrc}`);
+      
+      // targets.mindファイルが存在するか確認を試みる
+      fetch(mindARSystem.imageTargetSrc)
+        .then(response => {
+          if (response.ok) {
+            logDebug("targets.mindファイルにアクセスできました");
+          } else {
+            logDebug(`エラー: targets.mindファイルへのアクセスに失敗しました（ステータス: ${response.status}）`);
+          }
+        })
+        .catch(error => {
+          logDebug(`エラー: targets.mindファイルの取得中にエラーが発生しました: ${error.message}`);
+        });
+      
+      // ARシステムのイベント処理
+      sceneEl.addEventListener('renderstart', () => {
+        logDebug("ARシステムのレンダリングが開始されました");
+        loadingElem.style.display = 'none';
+        
+        // MindARシステムの取得と起動
+        const mindARSystem = sceneEl.systems["mindar-image-system"];
+        if (mindARSystem) {
+          logDebug("MindARシステムが見つかりました、起動します");
+          mindARSystem.start();
+        } else {
+          logDebug("エラー: MindARシステムが見つかりません");
+        }
+      });
+      
+      // カメラに関する情報
+      navigator.mediaDevices.enumerateDevices()
+        .then(devices => {
+          const videoDevices = devices.filter(device => device.kind === 'videoinput');
+          logDebug(`利用可能なカメラ: ${videoDevices.length}台`);
+        })
+        .catch(err => {
+          logDebug(`カメラの列挙中にエラーが発生しました: ${err.message}`);
+        });
+      
+      // ターゲット検出イベント
+      sceneEl.addEventListener('targetFound', event => {
+        logDebug("ターゲットが検出されました");
+        statusElem.textContent = "機器を認識しました！";
+      });
+      
+      // ターゲットロストイベント
+      sceneEl.addEventListener('targetLost', event => {
+        logDebug("ターゲットを見失いました");
+        statusElem.textContent = "カメラを機器に近づけてください";
+      });
+      
+      // エラーハンドリング
+      window.addEventListener('error', event => {
+        logDebug(`JavaScriptエラー: ${event.message} at ${event.filename}:${event.lineno}`);
+      });
+    });
+  </script>
+</body>
+</html>
